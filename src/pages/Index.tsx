@@ -39,6 +39,8 @@ const Index = () => {
   const [word, setWord] = useState('');
   const [currentProverb, setCurrentProverb] = useState('');
   const [history, setHistory] = useState<Proverb[]>([]);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState('');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const generateProverb = () => {
     if (!word.trim()) {
@@ -84,6 +86,34 @@ const Index = () => {
     }
   };
 
+  const handleGenerateImage = async (proverbText: string) => {
+    setIsGeneratingImage(true);
+    setGeneratedImageUrl('');
+
+    try {
+      const response = await fetch('https://functions.poehali.dev/d8b33728-48cc-4b65-a127-a6fd517372c0', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: proverbText }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate image');
+      }
+
+      const data = await response.json();
+      setGeneratedImageUrl(data.imageUrl);
+      toast.success('Изображение создано!');
+    } catch (error) {
+      toast.error('Ошибка при создании изображения');
+      console.error('Image generation error:', error);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-4xl mx-auto px-4 py-12 md:py-20">
@@ -122,15 +152,48 @@ const Index = () => {
                 <p className="text-2xl md:text-3xl font-heading font-semibold text-center text-foreground leading-relaxed">
                   «{currentProverb}»
                 </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleShare(currentProverb)}
-                  className="absolute top-4 right-4"
-                >
-                  <Icon name="Share2" size={18} />
-                </Button>
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleGenerateImage(currentProverb)}
+                    disabled={isGeneratingImage}
+                  >
+                    <Icon name={isGeneratingImage ? "Loader2" : "Image"} size={18} className={isGeneratingImage ? "animate-spin" : ""} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleShare(currentProverb)}
+                  >
+                    <Icon name="Share2" size={18} />
+                  </Button>
+                </div>
               </div>
+              
+              {generatedImageUrl && (
+                <div className="mt-6 animate-scale-in">
+                  <img 
+                    src={generatedImageUrl} 
+                    alt={currentProverb}
+                    className="w-full rounded-lg shadow-lg"
+                  />
+                  <div className="flex justify-center mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = generatedImageUrl;
+                        link.download = 'proverb.png';
+                        link.click();
+                      }}
+                    >
+                      <Icon name="Download" className="mr-2" size={18} />
+                      Скачать изображение
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </Card>
@@ -150,14 +213,23 @@ const Index = () => {
                     <p className="text-lg text-foreground flex-1">
                       {item.text}
                     </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleShare(item.text)}
-                      className="shrink-0"
-                    >
-                      <Icon name="Share2" size={16} />
-                    </Button>
+                    <div className="flex gap-2 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleGenerateImage(item.text)}
+                        disabled={isGeneratingImage}
+                      >
+                        <Icon name="Image" size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleShare(item.text)}
+                      >
+                        <Icon name="Share2" size={16} />
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               ))}

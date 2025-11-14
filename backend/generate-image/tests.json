@@ -1,0 +1,19 @@
+{
+  "tests": [
+    {
+      "name": "Test OPTIONS request",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Test image generation with valid text",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "text": "Семь раз отмерь"
+      },
+      "expectedStatus": 200
+    }
+  ]
+}
